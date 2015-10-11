@@ -23,7 +23,7 @@ unsigned char fUpd = 0;
 #define BTN2DOWN	(!CHECKBIT(PIND, PD7))
 
 #define MAXPWM		720
-#define DLDUR		60 * 60 // 60 min daylight duration
+#define DLDUR		72 * 60 // 60 min daylight duration
 #define SSDUR		84 * 60 // 90 min sunset duration
 #define DLUPDPER	DLDUR / MAXPWM
 #define SSUPDPER	SSDUR / MAXPWM
@@ -138,8 +138,8 @@ int main(void)
 	g_Time.ss = 0;
 	g_Time.fCng = 0;
 	
-	struct TIME g_DayLight = { 7, 00, 0, 0, 0 };
-	struct TIME g_SunSet = { 22, 00, 0, 0, 0 };
+	struct TIME g_DayLight = { 12, 30, 0, 0, 0 };
+	struct TIME g_SunSet = { 20, 30, 0, 0, 0 };
 	
 	IND_Init();
 

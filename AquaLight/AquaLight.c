@@ -138,7 +138,7 @@ int main(void)
 	g_Time.ss = 0;
 	g_Time.fCng = 0;
 	
-	struct TIME g_DayLight = { 12, 30, 0, 0, 0 };
+	struct TIME g_DayLight = { 10, 30, 0, 0, 0 };
 	struct TIME g_SunSet = { 20, 30, 0, 0, 0 };
 	
 	IND_Init();

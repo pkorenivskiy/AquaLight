@@ -19,12 +19,15 @@
 
 unsigned char fUpd = 0;
 
+#define BIGLEDON()	(CLEARBIT(PORTD, PD5))
+#define BIGLEDOFF()	(SETBIT(PORTD, PD5))
+
 #define BTN1DOWN	(!CHECKBIT(PIND, PD6))
 #define BTN2DOWN	(!CHECKBIT(PIND, PD7))
 
 #define MAXPWM		720
-#define DLDUR		72 * 60 // 60 min daylight duration
-#define SSDUR		84 * 60 // 90 min sunset duration
+#define DLDUR		72 * 60 // 72 min daylight duration
+#define SSDUR		84 * 60 // 84 min sunset duration
 #define DLUPDPER	DLDUR / MAXPWM
 #define SSUPDPER	SSDUR / MAXPWM
 
@@ -122,11 +125,12 @@ void initTimers()
 int main(void)
 {	
 	DDRB = 0xFF; // turn all in OUT
-	PORTB = 0x00; // turn all OFF
+	PORTB = 0x00; // turn all OFF	
 	
-	DDRD = (1 << PD4) | (1 << PD3) | (1 << PD2) | (1 << PD1); // LED // 0x1E; 0b00011110
+	DDRD = (1 << PD4) | (1 << PD3) | (1 << PD2) | (1 << PD1) | (1 << PD5); // LED // 0x1E; 0b00011110
 	DDRD |= (0 << PD6) | (0 << PD7); // buttons
 	PORTD = 0x00;
+	BIGLEDOFF();
 	
 	DDRC = 0xFF;
 	PORTC = 0x00;
@@ -138,8 +142,8 @@ int main(void)
 	g_Time.ss = 0;
 	g_Time.fCng = 0;
 	
-	struct TIME g_DayLight = { 10, 30, 0, 0, 0 };
-	struct TIME g_SunSet = { 20, 30, 0, 0, 0 };
+	struct TIME g_DayLight = { 12, 30, 0, 0, 0 };
+	struct TIME g_SunSet = { 21, 00, 0, 0, 0 };
 	
 	IND_Init();
 
@@ -198,6 +202,7 @@ int main(void)
 			{
 				g_SunSet.fUpd = 1;
 				g_uchLightUpd = 0;
+				BIGLEDOFF();
 			}
 			
 			if (g_DayLight.fUpd == 1 && g_uchLightUpd == DLUPDPER)
@@ -205,6 +210,7 @@ int main(void)
 				if (++OCR1A == MAXPWM)
 				{
 					g_DayLight.fUpd = 0;
+					BIGLEDON();
 				}
 				g_uchLightUpd = 0;
 			}
@@ -373,12 +379,14 @@ int main(void)
 				{
 					g_DayLight.fUpd = 0;
 					OCR1A = MAXPWM;
+					BIGLEDON();
 				}
 				else if (g_DayLight.fUpd == 0 && OCR1A == MAXPWM)
 				{
 					OCR1A = MAXPWM - 1;
 					g_SunSet.fUpd = 1;
 					g_uchLightUpd = 0;
+					BIGLEDOFF();
 				}
 				else if (g_SunSet.fUpd == 1 && OCR1A < MAXPWM)
 				{

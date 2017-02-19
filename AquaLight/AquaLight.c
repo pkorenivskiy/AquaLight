@@ -19,16 +19,16 @@
 
 unsigned char fUpd = 0;
 
-#define BIGLEDON()	(CLEARBIT(PORTD, PD5))
-#define BIGLEDOFF()	(SETBIT(PORTD, PD5))
+#define BIGLEDON()	(SETBIT(PORTD, PD5))
+#define BIGLEDOFF()	(CLEARBIT(PORTD, PD5))
 
 #define BTN1DOWN	(!CHECKBIT(PIND, PD6))
 #define BTN2DOWN	(!CHECKBIT(PIND, PD7))
 
-#define MAXPWM		720
-#define DLDUR		72 * 60 // 72 min daylight duration
-#define SSDUR		84 * 60 // 84 min sunset duration
-#define DLUPDPER	DLDUR / MAXPWM
+#define MAXPWM		1020 // 17 в минуту! DLDUR and SSDUR должны быть кратны 17ми минутам
+#define DLDUR		68 * 60 // sec daylight duration 
+#define SSDUR		85 * 60 // sec sunset duration
+#define DLUPDPER	DLDUR / MAXPWM 
 #define SSUPDPER	SSDUR / MAXPWM
 
 volatile unsigned int g_nBtn1 = 0;
@@ -95,9 +95,14 @@ void initTimer0()
 
 void initPwm() // timer1 http://cxem.net/mc/mc231.php
 {
-	//TCCR1A = (1 << COM1A1) | (0 << COM1A0); //Clear OC1A/OC1B on Compare Match, set OC1A/OC1B at BOTTOM
+	// PWM for led module
+	//TCCR1A = (1 << WGM11) | (1 << WGM10);
+	//TCCR1B = (0 << CS12) | (1 << CS11) |(1 << CS10) | (0 << WGM13) | (1 << WGM12); //Делитель= /64
+
+	//PWM for pt4115
 	TCCR1A = (1 << WGM11) | (1 << WGM10);
-	TCCR1B = (0 << CS12) |(1 << CS11) |(1 << CS10) | (0 << WGM13) | (1 << WGM12); //Делитель= /1
+	TCCR1B = (0 << CS12) | (0 << CS11) | (1 << CS10) | (0 << WGM13) | (1 << WGM12); //Делитель= /1 10-bit
+	
 	OCR1A = 0;			//Начальная яркость нулевая
 }
 
@@ -130,12 +135,15 @@ int main(void)
 	DDRD = (1 << PD4) | (1 << PD3) | (1 << PD2) | (1 << PD1) | (1 << PD5); // LED // 0x1E; 0b00011110
 	DDRD |= (0 << PD6) | (0 << PD7); // buttons
 	PORTD = 0x00;
-	BIGLEDOFF();
 	
 	DDRC = 0xFF;
 	PORTC = 0x00;
 	
 	initTimers();
+
+	BIGLEDOFF();
+	PORTB = 0x00; // turn all OFF
+	CLEARBIT(TCCR1A, COM1A1);
 
 	g_Time.hh = 0;
 	g_Time.mm = 0;
@@ -196,6 +204,7 @@ int main(void)
 			{
 				g_DayLight.fUpd = 1;
 				g_uchLightUpd = 0;
+				OCR1A = 0;
 				SETBIT(TCCR1A, COM1A1);
 			}
 			else if (g_Time.hh == g_SunSet.hh && g_Time.mm == g_SunSet.mm && g_Time.ss == 0)
@@ -211,6 +220,9 @@ int main(void)
 				{
 					g_DayLight.fUpd = 0;
 					BIGLEDON();
+					// off PWM and switch led on
+					CLEARBIT(TCCR1A, COM1A1);
+					SETBIT(PORTB, PB1);
 				}
 				g_uchLightUpd = 0;
 			}
@@ -220,6 +232,7 @@ int main(void)
 				{
 					g_SunSet.fUpd = 0;
 					CLEARBIT(TCCR1A, COM1A1);
+					CLEARBIT(PORTB, PB1);
 				}
 				g_uchLightUpd = 0;
 			}

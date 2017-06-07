@@ -127,12 +127,50 @@ void initTimers()
 	sei();
 }
 
+void startSunSet()
+{
+	OCR1A = MAXPWM;
+	// on pwm
+	SETBIT(TCCR1A, COM1A1);
+	BIGLEDOFF();
+}
+
+void startDayLight()
+{
+	OCR1A = 1;
+	SETBIT(TCCR1A, COM1A1);
+
+	// cooler on
+	SETBIT(PORTB, PB2);
+}
+
+void offLight()
+{
+	OCR1A = 0;
+	//off PWN and led off
+	CLEARBIT(TCCR1A, COM1A1);
+	CLEARBIT(PORTB, PB1);
+
+	// cooler off
+	CLEARBIT(PORTB, PB2);
+}
+
+void onLight()
+{
+	BIGLEDON();	
+	// off PWM and switch led on
+	CLEARBIT(TCCR1A, COM1A1);
+	SETBIT(PORTB, PB1);
+	OCR1A = MAXPWM;
+}
+
 int main(void)
 {	
 	DDRB = 0xFF; // turn all in OUT
 	PORTB = 0x00; // turn all OFF	
 	
-	DDRD = (1 << PD4) | (1 << PD3) | (1 << PD2) | (1 << PD1) | (1 << PD5); // LED // 0x1E; 0b00011110
+	DDRD = (1 << PD4) | (1 << PD3) | (1 << PD2) | (1 << PD1);// 0x1E; 0b00011110
+	DDRD |= (1 << PD5); // BIGLED
 	DDRD |= (0 << PD6) | (0 << PD7); // buttons
 	PORTD = 0x00;
 	
@@ -204,14 +242,13 @@ int main(void)
 			{
 				g_DayLight.fUpd = 1;
 				g_uchLightUpd = 0;
-				OCR1A = 0;
-				SETBIT(TCCR1A, COM1A1);
+				startDayLight();				
 			}
 			else if (g_Time.hh == g_SunSet.hh && g_Time.mm == g_SunSet.mm && g_Time.ss == 0)
 			{
 				g_SunSet.fUpd = 1;
 				g_uchLightUpd = 0;
-				BIGLEDOFF();
+				startSunSet();
 			}
 			
 			if (g_DayLight.fUpd == 1 && g_uchLightUpd == DLUPDPER)
@@ -219,10 +256,7 @@ int main(void)
 				if (++OCR1A == MAXPWM)
 				{
 					g_DayLight.fUpd = 0;
-					BIGLEDON();
-					// off PWM and switch led on
-					CLEARBIT(TCCR1A, COM1A1);
-					SETBIT(PORTB, PB1);
+					onLight();
 				}
 				g_uchLightUpd = 0;
 			}
@@ -231,8 +265,7 @@ int main(void)
 				if (--OCR1A == 0)
 				{
 					g_SunSet.fUpd = 0;
-					CLEARBIT(TCCR1A, COM1A1);
-					CLEARBIT(PORTB, PB1);
+					offLight();
 				}
 				g_uchLightUpd = 0;
 			}
@@ -385,28 +418,23 @@ int main(void)
 				{
 					g_DayLight.fUpd = 1;
 					g_uchLightUpd = 0;
-					OCR1A = 1;
-					SETBIT(TCCR1A, COM1A1);
+					startDayLight();
 				}
 				else if (g_DayLight.fUpd == 1 && OCR1A > 0 && OCR1A < MAXPWM)
 				{
 					g_DayLight.fUpd = 0;
-					OCR1A = MAXPWM;
-					BIGLEDON();
+					onLight();
 				}
 				else if (g_DayLight.fUpd == 0 && OCR1A == MAXPWM)
 				{
-					OCR1A = MAXPWM - 1;
 					g_SunSet.fUpd = 1;
 					g_uchLightUpd = 0;
-					BIGLEDOFF();
+					startSunSet();
 				}
 				else if (g_SunSet.fUpd == 1 && OCR1A < MAXPWM)
 				{
 					g_SunSet.fUpd = 0;
-					OCR1A = 0;
-					CLEARBIT(TCCR1A, COM1A1);
-					CLEARBIT(PORTB, PB1);
+					offLight();
 				}
 			}
 			g_chBtn2State = 3;
